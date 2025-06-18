@@ -11,7 +11,9 @@ app.secret_key = os.urandom(24)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 # Firestore init
-cred = credentials.Certificate("mockdesk-5c364-firebase-adminsdk-fbsvc-4dd4f8d312.json")
+import json
+key_json = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+cred = credentials.Certificate(json.loads(key_json))
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
