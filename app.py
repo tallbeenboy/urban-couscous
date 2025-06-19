@@ -257,7 +257,7 @@ def update_values():
     stock_val = round(stockvalue(owned), 2)
     acc_value = round(stock_val + cash, 2)
     cash = round(cash, 2)
-
+    save_daily_history(username, cash, owned)
     data = {"stockValue": stock_val, "accValue": acc_value, "cash": cash}
     return jsonify(data)
 
