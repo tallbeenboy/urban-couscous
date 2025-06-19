@@ -107,8 +107,7 @@ def stockvalue(owned):
 def save_daily_history(username, cash, owned):
     acc_value = round(stockvalue(owned) + cash, 2)
     stock_val = round(stockvalue(owned), 2)
-    date_str = datetime.utcnow().strftime("%Y-%m-%d")
-
+    date_str = datetime.utcnow().strftime("%Y-%m-%d_%H:%M:%S")
     history_ref = db.collection("users").document(username).collection("history").document(date_str)
     history_ref.set({
         "accValue": acc_value,
