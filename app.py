@@ -60,11 +60,34 @@ def save_user_data(username, owned, cash):
     meta_ref = user_doc.collection("meta").document("account")
     meta_ref.set({"cash": round(cash, 2)})
 
-def get_price(symbol):
+ def get_price(symbol):
     url = f'https://finnhub.io/api/v1/quote?symbol={symbol}&token={API_KEY}'
-    response = requests.get(url)
-    data = response.json()
-    return data.get('c', 0)  # current price or 0 if not found
+    try:
+        response = requests.get(url, timeout=3)
+        response.raise_for_status()
+        data = response.json()
+        price = data.get('c', 0)
+
+        if price and price > 0:
+            # Save the latest price to Firestore
+            db.collection("prices").document(symbol).set({
+                "price": price,
+                "updated": datetime.utcnow()
+            })
+            return price
+        else:
+            fallback_doc = db.collection("prices").document(symbol).get()
+            if fallback_doc.exists:
+                fallback_price = fallback_doc.to_dict().get("price")
+                print(f"Using cached Firestore price for {symbol}: {fallback_price}")
+                return fallback_price
+            return None
+    except Exception as e:
+        print(f"🔥 Error fetching price for {symbol}: {e}")
+        fallback_doc = db.collection("prices").document(symbol).get()
+        if fallback_doc.exists:
+            return fallback_doc.to_dict().get("price")
+        return None
 
 def gen_rows(owned):
     rows = []
