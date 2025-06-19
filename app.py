@@ -60,7 +60,7 @@ def save_user_data(username, owned, cash):
     meta_ref = user_doc.collection("meta").document("account")
     meta_ref.set({"cash": round(cash, 2)})
 
- def get_price(symbol):
+def get_price(symbol):
     url = f'https://finnhub.io/api/v1/quote?symbol={symbol}&token={API_KEY}'
     try:
         response = requests.get(url, timeout=3)
