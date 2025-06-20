@@ -128,16 +128,28 @@ def stockvalue(owned):
     return value
 
 def save_daily_history(username, cash, owned):
+    now = datetime.utcnow()
     acc_value = round(stockvalue(owned) + cash, 2)
     stock_val = round(stockvalue(owned), 2)
-    date_str = datetime.utcnow().strftime("%Y-%m-%d_%H:%M:%S")
-    history_ref = db.collection("users").document(username).collection("history").document(date_str)
-    history_ref.set({
+
+    history_ref = db.collection("users").document(username).collection("history")
+    latest_doc = list(history_ref.order_by("timestamp", direction=firestore.Query.DESCENDING).limit(1).stream())
+
+    if latest_doc:
+        last_time = latest_doc[0].to_dict().get("timestamp")
+        if last_time and (now - last_time).total_seconds() < 86400:  # 24 hours
+            #print("⏱ History update skipped: less than 24 hours since last entry")
+            return  # Skip writing
+
+    date_str = now.strftime("%Y-%m-%d_%H:%M:%S")
+    history_ref.document(date_str).set({
         "accValue": acc_value,
         "stockValue": stock_val,
         "cash": round(cash, 2),
-        "timestamp": datetime.utcnow()
+        "timestamp": now
     })
+    #print("✅ History saved:", date_str)
+
 
 # -- Routes --
 
@@ -279,7 +291,7 @@ def update_values():
     stock_val = round(stockvalue(owned), 2)
     acc_value = round(stock_val + cash, 2)
     cash = round(cash, 2)
-    save_daily_history(username, cash, owned)
+    #save_daily_history(username, cash, owned)
     data = {"stockValue": stock_val, "accValue": acc_value, "cash": cash}
     return jsonify(data)
 
