@@ -136,10 +136,10 @@ def save_daily_history(username, cash, owned):
     latest_doc = list(history_ref.order_by("timestamp", direction=firestore.Query.DESCENDING).limit(1).stream())
 
     if latest_doc:
-    last_time = latest_doc[0].to_dict().get("timestamp")
-    if isinstance(last_time, datetime):
-        if (now - last_time).total_seconds() < 86400:
-            return  # Skip writing
+        last_time = latest_doc[0].to_dict().get("timestamp")
+        if isinstance(last_time, datetime):
+            if (now - last_time).total_seconds() < 86400:
+                return  # Skip writing
 
 
     date_str = now.strftime("%Y-%m-%d_%H:%M:%S")
