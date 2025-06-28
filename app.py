@@ -264,6 +264,16 @@ def sell():
 
     return jsonify(f"successful transaction ({round(price * shares, 2)})")
 
+@app.route("/allinvestments", methods=["POST"])
+def get_rows():
+    username = get_user()
+    if not username:
+        return jsonify("Not logged in"), 403
+
+    owned, cash = load_user_data(username)
+    rows = gen_rows(owned)
+    return jsonify(rows)
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port, debug=True)
