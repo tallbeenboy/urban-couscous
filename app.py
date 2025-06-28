@@ -17,7 +17,7 @@ cred = credentials.Certificate(json.loads(key_json))
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-API_KEY = 'd0v5lc9r01qmg3ukcs60d0v5lc9r01qmg3ukcs6g'  # your finnhub API key
+API_KEY = 'd0v5lc9r01qmg3ukcs60d0v5lc9r01qmg3ukcs6g'
 
 # -- Helper Functions --
 
@@ -28,20 +28,31 @@ def ensure_user_exists(username):
     user_doc = db.collection("users").document(username)
     if not user_doc.get().exists:
         user_doc.set({})
-        user_doc.collection("meta").document("account").set({"cash": 10000})
+        meta_ref = user_doc.collection("meta").document("account")
+        meta_ref.set({"cash": 10000})
 
 def load_user_data(username):
     owned = []
-    cash = 10000
+    cash = None
 
-    owned_ref = db.collection("users").document(username).collection("portfolio")
+    user_doc = db.collection("users").document(username)
+    owned_ref = user_doc.collection("portfolio")
     for doc in owned_ref.stream():
         owned.append(doc.to_dict())
 
-    meta_ref = db.collection("users").document(username).collection("meta").document("account")
+    meta_ref = user_doc.collection("meta").document("account")
     doc = meta_ref.get()
-    if doc.exists:
-        cash = doc.to_dict().get("cash", 10000)
+
+    if not doc.exists:
+        print("⚠️ No account metadata found, creating new one with $10,000")
+        cash = 10000
+        meta_ref.set({"cash": cash})
+    else:
+        cash = doc.to_dict().get("cash")
+        if cash is None:
+            print("⚠️ Account exists but no cash field, defaulting to $10,000")
+            cash = 10000
+            meta_ref.set({"cash": cash})
 
     return owned, cash
 
@@ -55,7 +66,8 @@ def save_user_data(username, owned, cash):
     for stock in owned:
         portfolio_ref.add(stock)
 
-    user_doc.collection("meta").document("account").set({"cash": round(cash, 2)})
+    meta_ref = user_doc.collection("meta").document("account")
+    meta_ref.set({"cash": round(cash, 2)})
 
 def get_price(symbol):
     url = f'https://finnhub.io/api/v1/quote?symbol={symbol}&token={API_KEY}'
@@ -74,7 +86,9 @@ def get_price(symbol):
         else:
             fallback_doc = db.collection("prices").document(symbol).get()
             if fallback_doc.exists:
-                return fallback_doc.to_dict().get("price")
+                fallback_price = fallback_doc.to_dict().get("price")
+                print(f"⚠️ Falling back to cached price for {symbol}: {fallback_price}")
+                return fallback_price
             return None
     except Exception as e:
         print(f"🔥 Error fetching price for {symbol}: {e}")
@@ -110,7 +124,8 @@ def gen_rows(owned):
     return rows
 
 def stockvalue(owned):
-    return sum(round(stock["currentvalue"], 2) for stock in gen_rows(owned))
+    rows = gen_rows(owned)
+    return sum(round(stock["currentvalue"], 2) for stock in rows)
 
 def save_daily_history(username, cash, owned):
     now = datetime.now(timezone.utc)
@@ -122,9 +137,8 @@ def save_daily_history(username, cash, owned):
 
     if latest_doc:
         last_time = latest_doc[0].to_dict().get("timestamp")
-        if isinstance(last_time, datetime):
-            if (now - last_time).total_seconds() < 86400:
-                return
+        if last_time and (now - last_time).total_seconds() < 86400:
+            return
 
     date_str = now.strftime("%Y-%m-%d_%H:%M:%S")
     history_ref.document(date_str).set({
@@ -135,7 +149,6 @@ def save_daily_history(username, cash, owned):
     })
 
 # -- Routes --
-
 @app.route("/")
 def index():
     if not get_user():
@@ -158,27 +171,9 @@ def logout():
     session.clear()
     return redirect(url_for("login"))
 
-@app.route("/price", methods=["POST"])
-def price():
-    if not get_user():
-        return jsonify("Not logged in"), 403
-
-    symbol = request.get_json().get("symbol", "").upper().strip()
-    if not symbol:
-        return jsonify("No symbol provided"), 400
-
-    price = get_price(symbol)
-    if price == 0:
-        return jsonify("Symbol not found or no price"), 404
-
-    return jsonify(str(price))
-
 @app.route("/buy", methods=["POST"])
 def buy():
     username = get_user()
-    if not username:
-        return jsonify("Not logged in"), 403
-
     data = request.get_json()
     symbol = data.get("symbol", "").upper().strip()
     shares = float(data.get("shares", 0))
@@ -195,93 +190,10 @@ def buy():
 
     try:
         save_user_data(username, owned, cash)
-    except Exception as e:
-        print("🔥 Firestore failed during save_user_data:", e)
-        return jsonify("failed: firestore error during save_user_data")
-
-    try:
+        owned, cash = load_user_data(username)
         save_daily_history(username, cash, owned)
     except Exception as e:
-        print("⚠️ Failed to save history:", e)
+        print("🔥 Firestore failed:", e)
+        return jsonify("failed: firestore error")
 
     return jsonify(f"success: bought {shares} {symbol} at {price}")
-
-@app.route("/sell", methods=["POST"])
-def sell():
-    username = get_user()
-    if not username:
-        return jsonify("Not logged in"), 403
-
-    data = request.get_json()
-    symbol = data.get("symbol", "").upper().strip()
-    shares = float(data.get("shares", 0))
-
-    if shares < 1:
-        return jsonify("failed transaction: invalid shares")
-
-    owned, cash = load_user_data(username)
-    subtracted = 0
-
-    for stock in owned:
-        if stock["symbol"] == symbol:
-            if stock["shares"] < shares:
-                subtracted += stock["shares"]
-                stock["shares"] = 0
-            else:
-                subtracted = shares
-                stock["shares"] -= shares
-            if subtracted == shares:
-                break
-
-    if subtracted < shares:
-        return jsonify("transaction failed: you don't own enough shares")
-
-    price = get_price(symbol)
-    cash += price * shares
-    owned = [s for s in owned if s["shares"] > 0]
-
-    save_user_data(username, owned, cash)
-    save_daily_history(username, cash, owned)
-
-    return jsonify(f"successful transaction ({round(price * shares, 2)})")
-
-@app.route("/allinvestments", methods=["POST"])
-def get_rows():
-    username = get_user()
-    if not username:
-        return jsonify("Not logged in"), 403
-
-    owned, cash = load_user_data(username)
-    return jsonify(gen_rows(owned))
-
-@app.route("/updatevalues", methods=["POST"])
-def update_values():
-    username = get_user()
-    if not username:
-        return jsonify("Not logged in"), 403
-
-    owned, cash = load_user_data(username)
-    stock_val = round(stockvalue(owned), 2)
-    acc_value = round(stock_val + cash, 2)
-    return jsonify({"stockValue": stock_val, "accValue": acc_value, "cash": round(cash, 2)})
-
-@app.route("/history", methods=["POST"])
-def history():
-    username = get_user()
-    if not username:
-        return jsonify("Not logged in"), 403
-
-    docs = db.collection("users").document(username).collection("history").order_by("timestamp").stream()
-    return jsonify({doc.id: doc.to_dict() for doc in docs})
-
-@app.route("/testfirestore")
-def test_firestore():
-    try:
-        db.collection("test").document("ping").set({"status": "ok"})
-        return "Write worked!"
-    except Exception as e:
-        return f"Write failed: {e}"
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
