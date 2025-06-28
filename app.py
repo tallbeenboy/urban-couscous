@@ -198,6 +198,71 @@ def buy():
 
     return jsonify(f"success: bought {shares} {symbol} at {price}")
 
+@app.route("/updatevalues", methods=["POST"])
+def update_values():
+    username = get_user()
+    if not username:
+        return jsonify("Not logged in"), 403
+
+    owned, cash = load_user_data(username)
+    stock_val = round(stockvalue(owned), 2)
+    acc_value = round(stock_val + cash, 2)
+    return jsonify({"stockValue": stock_val, "accValue": acc_value, "cash": round(cash, 2)})
+
+@app.route("/history", methods=["POST"])
+def history():
+    username = get_user()
+    if not username:
+        return jsonify("Not logged in"), 403
+
+    docs = db.collection("users").document(username).collection("history").order_by("timestamp").stream()
+    return jsonify({doc.id: doc.to_dict() for doc in docs})
+
+@app.route("/testfirestore")
+def test_firestore():
+    try:
+        db.collection("test").document("ping").set({"status": "ok"})
+        return "Write worked!"
+    except Exception as e:
+        return f"Write failed: {e}"
+@app.route("/sell", methods=["POST"])
+def sell():
+    username = get_user()
+    if not username:
+        return jsonify("Not logged in"), 403
+
+    data = request.get_json()
+    symbol = data.get("symbol", "").upper().strip()
+    shares = float(data.get("shares", 0))
+
+    if shares < 1:
+        return jsonify("failed transaction: invalid shares")
+
+    owned, cash = load_user_data(username)
+    subtracted = 0
+
+    for stock in owned:
+        if stock["symbol"] == symbol:
+            if stock["shares"] < shares:
+                subtracted += stock["shares"]
+                stock["shares"] = 0
+            else:
+                subtracted = shares
+                stock["shares"] -= shares
+            if subtracted == shares:
+                break
+
+    if subtracted < shares:
+        return jsonify("transaction failed: you don't own enough shares")
+
+    price = get_price(symbol)
+    cash += price * shares
+    owned = [s for s in owned if s["shares"] > 0]
+
+    save_user_data(username, owned, cash)
+    save_daily_history(username, cash, owned)
+
+    return jsonify(f"successful transaction ({round(price * shares, 2)})")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
