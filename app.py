@@ -209,8 +209,12 @@ def buy():
     owned, cash = load_user_data(username)
     print("Step 5: Loaded owned and cash:", owned, cash)
 
+    total_cost = price * shares
+    if total_cost > cash:
+        return jsonify("Transaction failed: not enough cash")
+
     owned.append({"symbol": symbol, "buyprice": round(price, 2), "shares": round(shares, 2)})
-    cash -= price * shares
+    cash -= total_cost
 
     try:
         save_user_data(username, owned, cash)
@@ -224,6 +228,7 @@ def buy():
         return jsonify("failed: firestore error")
 
     return jsonify(f"success: bought {shares} {symbol} at {price}")
+
 
 @app.route("/allinvestments", methods=["POST"])
 def get_rows():
