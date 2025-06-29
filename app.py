@@ -28,12 +28,11 @@ def ensure_user_exists(username):
     user_doc = db.collection("users").document(username)
     if not user_doc.get().exists:
         user_doc.set({})
-        meta_ref = user_doc.collection("meta").document("account")
-        meta_ref.set({"cash": 10000})
+        user_doc.collection("meta").document("account").set({"cash": 10000})
 
 def load_user_data(username):
     owned = []
-    cash = None
+    cash = 0
 
     user_doc = db.collection("users").document(username)
     owned_ref = user_doc.collection("portfolio")
@@ -43,20 +42,15 @@ def load_user_data(username):
     meta_ref = user_doc.collection("meta").document("account")
     doc = meta_ref.get()
 
-    if not doc.exists:
-        print("⚠️ No account metadata found, creating new one with $10,000")
-        cash = 10000
-        meta_ref.set({"cash": cash})
+    if doc.exists:
+        cash = doc.to_dict().get("cash", 0)
     else:
-        cash = doc.to_dict().get("cash")
-        if cash is None:
-            print("⚠️ Account exists but no cash field, defaulting to $10,000")
-            cash = 10000
-            meta_ref.set({"cash": cash})
+        print(f"⚠️ Account metadata missing for {username}, returning 0 cash")
 
     return owned, cash
 
 def save_user_data(username, owned, cash):
+    print(f"💾 Saving data for {username} — Cash: {cash}")
     user_doc = db.collection("users").document(username)
     portfolio_ref = user_doc.collection("portfolio")
 
@@ -225,6 +219,7 @@ def test_firestore():
         return "Write worked!"
     except Exception as e:
         return f"Write failed: {e}"
+
 @app.route("/sell", methods=["POST"])
 def sell():
     username = get_user()
@@ -277,4 +272,3 @@ def get_rows():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port, debug=True)
-
