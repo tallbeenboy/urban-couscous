@@ -1,3 +1,4 @@
+from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import requests
 import copy
@@ -152,13 +153,22 @@ def index():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form.get("username")
-        if username:
-            session["username"] = username
-            ensure_user_exists(username)
-            return redirect(url_for("index"))
-        return render_template("login.html", error="Invalid username")
+        username = request.form.get("username").strip()
+        password = request.form.get("password")
+
+        user_doc = db.collection("users").document(username).get()
+        if not user_doc.exists:
+            return render_template("login.html", error="User does not exist.")
+
+        stored_hash = user_doc.to_dict().get("password_hash")
+        if not stored_hash or not check_password_hash(stored_hash, password):
+            return render_template("login.html", error="Invalid password.")
+
+        session["username"] = username
+        return redirect(url_for("index"))
+
     return render_template("login.html")
+
 
 @app.route("/logout")
 def logout():
@@ -268,6 +278,30 @@ def get_rows():
     owned, cash = load_user_data(username)
     rows = gen_rows(owned)
     return jsonify(rows)
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form.get("username").strip()
+        password = request.form.get("password")
+
+        if not username or not password:
+            return render_template("register.html", error="Username and password required.")
+
+        user_doc = db.collection("users").document(username)
+        if user_doc.get().exists:
+            return render_template("register.html", error="User already exists.")
+
+        password_hash = generate_password_hash(password)
+        user_doc.set({
+            "password_hash": password_hash
+        })
+        user_doc.collection("meta").document("account").set({"cash": 10000})
+
+        return redirect(url_for("login"))
+
+    return render_template("register.html")
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
