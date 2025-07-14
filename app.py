@@ -302,6 +302,10 @@ def register():
 
     return render_template("register.html")
 
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    return render_template("about.html")
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
