@@ -328,6 +328,10 @@ def leaderboard():
 def about():
     return render_template("about.html")
 
+@app.route("/leaderboard-page")
+def leaderboard_page():
+    return render_template("leaderboard.html")
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
