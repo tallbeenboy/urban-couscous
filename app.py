@@ -146,9 +146,7 @@ def save_daily_history(username, cash, owned):
 # -- Routes --
 @app.route("/")
 def index():
-    if not get_user():
-        return redirect(url_for("login"))
-    return render_template("index.html")
+    return render_template("home.html")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
