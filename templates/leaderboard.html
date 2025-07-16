@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='MD.ico') }}">
     <meta charset="UTF-8">
     <title>Leaderboard</title>
     <style>
@@ -60,7 +61,8 @@ fetch("/leaderboard-data")
         <td>${index + 1}</td>
         <td>${user.username}</td>
         <td>$${user.accValue.toFixed(2)}</td>
-        <td>${user.timestamp || 'N/A'}</td>
+        <td>{{ user.timestamp.strftime('%Y-%m-%d %H:%M:%S') if user.timestamp else "—" }}</td>
+
       `;
       body.appendChild(row);
     });
