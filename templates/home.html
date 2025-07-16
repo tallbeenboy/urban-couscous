@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Blue Top Bar</title>
+  <style>
+    .top-bar {
+      background-color: #007BFF;
+      color: white;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between; /* pushes content to left and right */
+      font-family: Arial, sans-serif;
+    }
+    .slogan {
+      text-align: center;
+      font-size: 50px;
+      margin-top: 100px;
+      color: #333;
+      font-family: Arial, sans-serif;
+      font-weight: bold; /* Added to make it bold */
+    }
+    .media {
+      display: flex;
+      justify-content: center; /* centers the images */
+      gap: 20px; /* adds space between images */
+      margin-top: 100px;
+      text-align: center;
+      font-size: 20px;
+      margin-top: 100px;
+      color: #333;
+      font-family: Arial, sans-serif;
+      font-weight: bold; /* adds space above the images */
+    }
+    .captions {
+      text-align: center;
+      font-size: 20px;
+      color: #555;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <div>MockDesk</div>
+    <div>
+      <a href="{{ url_for('login') }}">Login</a>/<a href="{{ url_for('register') }}">Sign up</a>
+    </div>
+  </div>
+
+
+<div class="slogan">
+    MockDesk: Real Moves. Fake Money.
+</div>
+
+<div class="media">
+    <div style="text-align: center;">
+      <img src="{{ url_for('static', filename='bars.png') }}" alt="My Image" style="width: 400px; height: 300px;">
+      <p>Trade with real time prices</p>
+    </div>
+    <div style="text-align: center;">
+      <img src="{{ url_for('static', filename='money.png') }}" alt="My Image" style="width: 400px; height: 300px;">
+      <p>Use fake currency</p>
+    </div>
+    <div style="text-align: center;">
+      <img src="{{ url_for('static', filename='brain.png') }}" alt="My Image" style="width: 400px; height: 300px;">
+      <p>Sharpen your skills</p>
+    </div>
+
+</div>
+
+    
+
+</body>
+</html>
