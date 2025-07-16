@@ -92,11 +92,17 @@ def get_price(symbol):
             return fallback_doc.to_dict().get("price")
         return None
 
-@app.route("/price",methods=["POST"])
+@app.route("/price", methods=["POST"])
 def return_price():
+    data = request.get_json()
     symbol = data.get("symbol", "").upper().strip()
-    p=get_price(symbol)
-    return jsonify(p)
+    price = get_price(symbol)
+
+    if price is None:
+        return jsonify({"error": "Failed to fetch price"}), 500
+
+    return jsonify({"price": price}) 
+
 
 def gen_rows(owned):
     rows = []
