@@ -92,6 +92,12 @@ def get_price(symbol):
             return fallback_doc.to_dict().get("price")
         return None
 
+@app.route("/price",methods=["POST"])
+def return_price():
+    symbol = data.get("symbol", "").upper().strip()
+    p=get_price(symbol)
+    return jsonify(p)
+
 def gen_rows(owned):
     rows = []
     for stock in owned:
