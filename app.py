@@ -333,7 +333,8 @@ def about():
 
 @app.route("/leaderboard-page")
 def leaderboard_page():
-    return render_template("leaderboard.html")
+    username = get_user()
+    return render_template("leaderboard.html", user=username)
 
 
 if __name__ == '__main__':
