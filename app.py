@@ -310,18 +310,17 @@ def leaderboard_data():
     for user_doc in users_ref:
         username = user_doc.id
         history_ref = db.collection("users").document(username).collection("history")
-        latest_docs = list(history_ref.order_by("timestamp", direction=firestore.Query.DESCENDING).limit(1).stream())
+        latest = list(history_ref.order_by("timestamp", direction=firestore.Query.DESCENDING).limit(1).stream())
 
-        if latest_docs:
-            latest_data = latest_docs[0].to_dict()
-            acc_val = latest_data.get("accValue", 0)
-            ts = latest_data.get("timestamp")
-            timestamp_str = ts.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC") if ts else "—"
+        if latest:
+            latest_data = latest[0].to_dict()
+            timestamp = latest_data.get("timestamp")
+            readable_time = str(timestamp) if timestamp else "—"
 
             leaderboard.append({
                 "username": username,
-                "accValue": acc_val,
-                "timestamp": timestamp_str
+                "accValue": latest_data.get("accValue", 0),
+                "timestamp": readable_time
             })
 
     leaderboard.sort(key=lambda x: x["accValue"], reverse=True)
