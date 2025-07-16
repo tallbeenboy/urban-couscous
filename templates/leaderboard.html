@@ -34,40 +34,37 @@
     </style>
 </head>
 <body>
-    <h1>🏆 Leaderboard</h1>
+    <h1>Global Leaderboard</h1>
     <table>
-        <thead>
-            <tr>
-                <th>Rank</th>
-                <th>Username</th>
-                <th>Account Value ($)</th>
-            </tr>
-        </thead>
-        <tbody id="leaderboard-body">
-            <tr><td colspan="3">Loading...</td></tr>
-        </tbody>
-    </table>
+  <thead>
+    <tr>
+      <th>Rank</th>
+      <th>User</th>
+      <th>Account Value</th>
+      <th>Last Updated</th>
+    </tr>
+  </thead>
+  <tbody id="leaderboard-body">
+    <!-- Data will be inserted here via JS -->
+  </tbody>
+</table>
 
-    <script>
-        fetch("/leaderboard")
-            .then(res => res.json())
-            .then(data => {
-                const body = document.getElementById("leaderboard-body");
-                body.innerHTML = ""; // Clear loading row
-                data.forEach((user, index) => {
-                    const row = document.createElement("tr");
-                    row.innerHTML = `
-                        <td>${index + 1}</td>
-                        <td>${user.username}</td>
-                        <td>${user.accValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                    `;
-                    body.appendChild(row);
-                });
-            })
-            .catch(err => {
-                document.getElementById("leaderboard-body").innerHTML = "<tr><td colspan='3'>Error loading leaderboard.</td></tr>";
-                console.error("Error loading leaderboard:", err);
-            });
-    </script>
+<script>
+fetch("/leaderboard-data")
+  .then(res => res.json())
+  .then(data => {
+    const body = document.getElementById("leaderboard-body");
+    data.forEach((user, index) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${index + 1}</td>
+        <td>${user.username}</td>
+        <td>$${user.accValue.toFixed(2)}</td>
+        <td>${user.timestamp || 'N/A'}</td>
+      `;
+      body.appendChild(row);
+    });
+  });
+</script>
 </body>
 </html>
