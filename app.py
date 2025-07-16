@@ -163,9 +163,15 @@ def login():
             return render_template("login.html", error="Invalid password.")
 
         session["username"] = username
-        return redirect(url_for("index"))
+        return redirect(url_for("dashboard"))  # ✅ redirect to dashboard
 
     return render_template("login.html")
+
+@app.route("/dashboard")
+def dashboard():
+    if not get_user():
+        return redirect(url_for("login"))
+    return render_template("index.html")
 
 
 @app.route("/logout")
