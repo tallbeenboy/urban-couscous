@@ -302,27 +302,26 @@ def register():
 
     return render_template("register.html")
 
-@app.route("/leaderboard", methods=["GET"])
-def leaderboard():
-    users = db.collection("users").stream()
-    leaderboard_data = []
+@app.route("/leaderboard-data", methods=["GET"])
+def leaderboard_data():
+    users_ref = db.collection("users").stream()
+    leaderboard = []
 
-    for user in users:
-        username = user.id
+    for user_doc in users_ref:
+        username = user_doc.id
         history_ref = db.collection("users").document(username).collection("history")
         latest = list(history_ref.order_by("timestamp", direction=firestore.Query.DESCENDING).limit(1).stream())
 
         if latest:
             latest_data = latest[0].to_dict()
-            acc_value = latest_data.get("accValue", 0)
-            leaderboard_data.append({
+            leaderboard.append({
                 "username": username,
-                "accValue": round(acc_value, 2)
+                "accValue": latest_data.get("accValue", 0),
+                "timestamp": latest_data.get("timestamp").astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
             })
 
-    sorted_leaderboard = sorted(leaderboard_data, key=lambda x: x["accValue"], reverse=True)
-    return jsonify(sorted_leaderboard)
-
+    leaderboard.sort(key=lambda x: x["accValue"], reverse=True)
+    return jsonify(leaderboard)
 
 @app.route("/about")
 def about():
