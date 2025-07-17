@@ -165,13 +165,13 @@
                 },
                 body: JSON.stringify({ symbol }),
             })
-                .then(res => res.json())
-                .then(price => {
-                    document.getElementById('stockprice').textContent=symbol+": $"+price;
-                    return price;
-                })
-                
-            }
+                .then(data => {
+                    if (!data || data.price === undefined) {
+                        document.getElementById('stockprice').textContent = "Price not available";
+                    } else {
+                        document.getElementById('stockprice').textContent = symbol + ": $" + data.price.toFixed(2);
+                    }
+            })
           
            
            
