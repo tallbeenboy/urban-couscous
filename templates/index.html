@@ -156,22 +156,27 @@
                 if (!symbol) {
                     alert("Please enter a stock symbol");
                     return;
-                    }
-
+                }
+            
                 fetch("/price", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ symbol }),
-            })
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ symbol }),
+                })
+                .then(response => response.json())  // ✅ Parse JSON from response
                 .then(data => {
                     if (!data || data.price === undefined) {
                         document.getElementById('stockprice').textContent = "Price not available";
                     } else {
                         document.getElementById('stockprice').textContent = symbol + ": $" + data.price.toFixed(2);
                     }
-            })
+                })
+                .catch(error => {
+                    console.error("Error fetching price:", error);
+                    document.getElementById('stockprice').textContent = "Error fetching price";
+                });
             }
           
            
