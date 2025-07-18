@@ -74,6 +74,18 @@ button:hover {
     background-color: #0056b3;
 }
 
+#accountChart {
+  width: 100% !important;   /* fill container width */
+  height: 300px !important; /* good default height */
+  display: block;
+}
+
+#chartContainer {
+  max-width: 600px;  /* max width on desktop */
+  margin: 0 auto;
+}
+
+
 /* MAKE EVERYTHING MOBILE FRIENDLY */
 @media (max-width: 600px) {
     body {
@@ -91,6 +103,10 @@ button:hover {
         font-size: 16px;
     }
 
+    #accountChart {
+    height: 250px !important; /* taller on mobile to avoid squish */
+    }
+    
     #controls, #account-info {
         padding: 10px;
     }
@@ -181,7 +197,7 @@ button:hover {
             <h2 style="color: #000000; display: inline-block;">Account Value Over Time (Daily when you're logged in)</h2>
             <span id="toggleChartBtn" style="cursor: pointer; font-size: 20px; margin-left: 10px;">▼</span>
             <div id="chartContainer">
-                <canvas id="accountChart" width="400" height="125"></canvas>
+                <canvas id="accountChart"></canvas>
             </div>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
