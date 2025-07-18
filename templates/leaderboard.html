@@ -1,73 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='MD.ico') }}">
-    <meta charset="UTF-8">
-    <title>Leaderboard</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f0f2f5;
-            padding: 40px;
-            text-align: center;
-        }
-        h1 {
-            color: #333;
-        }
-        table {
-            margin: auto;
-            border-collapse: collapse;
-            width: 60%;
-            background: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-        th, td {
-            padding: 12px 20px;
-            border-bottom: 1px solid #ccc;
-        }
-        th {
-            background: #007BFF;
-            color: white;
-        }
-        tr:nth-child(even) {
-            background: #f9f9f9;
-        }
-    </style>
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='MD.ico') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leaderboard</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    a {
+      display: block;
+      text-align: left;
+      margin-bottom: 10px;
+      text-decoration: none;
+      color: #007BFF;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .table-container {
+      overflow-x: auto;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 500px;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      margin: 0 auto;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #ccc;
+      text-align: center;
+    }
+
+    th {
+      background: #007BFF;
+      color: white;
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+
+    @media (max-width: 600px) {
+      th, td {
+        font-size: 0.9rem;
+        padding: 10px 12px;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
 </head>
 <body>
-    <a href="{{ url_for('dashboard') }}" style="display: block; text-align: left;">Back to dashboard</a>
-    <h1>Global Leaderboard</h1>
+  <a href="{{ url_for('dashboard') }}">← Back to dashboard</a>
+  <h1>Global Leaderboard</h1>
+  <div class="table-container">
     <table>
-  <thead>
-    <tr>
-      <th>Rank</th>
-      <th>User</th>
-      <th>Account Value</th>
-      <th>Last Updated</th>
-    </tr>
-  </thead>
-  <tbody id="leaderboard-body">
-    <!-- Data will be inserted here via JS -->
-  </tbody>
-</table>
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>User</th>
+          <th>Account Value</th>
+          <th>Last Updated (UTC)</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboard-body">
+        <!-- Data will be inserted here via JS -->
+      </tbody>
+    </table>
+  </div>
 
-<script>
-fetch("/leaderboard-data")
-  .then(res => res.json())
-  .then(data => {
-    const body = document.getElementById("leaderboard-body");
-    data.forEach((user, index) => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${index + 1}</td>
-        <td>${user.username}</td>
-        <td>$${user.accValue.toFixed(2)}</td>
-        <td>${user.timestamp || '-'}</td>
-
-      `;
-      body.appendChild(row);
-    });
-  });
-</script>
+  <script>
+    fetch("/leaderboard-data")
+      .then(res => res.json())
+      .then(data => {
+        const body = document.getElementById("leaderboard-body");
+        data.forEach((user, index) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${user.username}</td>
+            <td>$${user.accValue.toFixed(2)}</td>
+            <td>${user.timestamp || '-'}</td>
+          `;
+          body.appendChild(row);
+        });
+      });
+  </script>
+All times UTC
 </body>
 </html>
