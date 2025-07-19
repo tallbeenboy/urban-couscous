@@ -6,6 +6,14 @@
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='MD.ico') }}">
 
     <title>Investment Dashboard</title>
+    <script>
+        window.addEventListener("error", function (e) {
+            // Prevent the default browser popup
+            e.preventDefault();
+            return true;
+        });
+        </script>
+
     <style>
     /* BASE STYLES - You already have most of this */
 body {
