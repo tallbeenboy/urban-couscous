@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Statistics</title>
+  <style>
+    body { font-family: Arial; background: #f0f2f5; padding: 20px; }
+    .card { background: #fff; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    h1 { color: #007BFF; }
+  </style>
+</head>
+<body>
+  <h1>📊 Platform Statistics</h1>
+  <div class="card">
+    <p><strong>Average Account Value:</strong> <span id="avg"></span></p>
+    <p><strong>Highest Account Value:</strong> <span id="high"></span> (<span id="highuser"></span>)</p>
+  </div>
+  <div class="card">
+    <h3>Top 3 Most Owned Stocks</h3>
+    <ul id="topstocks"></ul>
+  </div>
+
+<script>
+fetch("/stats-data")
+  .then(res => res.json())
+  .then(data => {
+      document.getElementById("avg").textContent = "$" + data.averageValue;
+      document.getElementById("high").textContent = "$" + data.highestValue;
+      document.getElementById("highuser").textContent = data.highestUser || "—";
+
+      let ul = document.getElementById("topstocks");
+      if (data.topStocks && data.topStocks.length) {
+          data.topStocks.forEach(s => {
+              let li = document.createElement("li");
+              li.textContent = `${s.symbol} — $${s.investment}`;
+              ul.appendChild(li);
+          });
+      } else {
+          ul.innerHTML = "<li>No stock data available</li>";
+      }
+  });
+</script>
+</body>
+</html>
