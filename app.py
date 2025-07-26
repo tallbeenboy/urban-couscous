@@ -141,6 +141,12 @@ def save_daily_history(username, cash, owned):
     acc_value = round(stockvalue(owned) + cash, 2)
     stock_val = round(stockvalue(owned), 2)
 
+    # 🔥 Build stock breakdown {symbol: total_investment}
+    stocks_breakdown = {}
+    for stock in owned:
+        invested = round(stock["shares"] * stock["buyprice"], 2)
+        stocks_breakdown[stock["symbol"]] = stocks_breakdown.get(stock["symbol"], 0) + invested
+
     history_ref = db.collection("users").document(username).collection("history")
     latest_doc = list(history_ref.order_by("timestamp", direction=firestore.Query.DESCENDING).limit(1).stream())
 
@@ -154,6 +160,7 @@ def save_daily_history(username, cash, owned):
         "accValue": acc_value,
         "stockValue": stock_val,
         "cash": round(cash, 2),
+        "stocks": stocks_breakdown,   # ✅ add this field
         "timestamp": now
     })
 
