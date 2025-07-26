@@ -7,6 +7,8 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from datetime import datetime, timezone
 import json
+from collections import Counter
+
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -350,6 +352,53 @@ def about():
 def leaderboard_page():
     username = get_user()
     return render_template("leaderboard.html", user=username)
+
+@app.route("/stats-data", methods=["GET"])
+def stats_data():
+    users_ref = db.collection("users").stream()
+    total_acc_value = 0
+    user_count = 0
+    highest_value = 0
+    highest_user = None
+    stock_counter = Counter()
+
+    for user_doc in users_ref:
+        username = user_doc.id
+        history_ref = db.collection("users").document(username).collection("history")
+        latest = list(history_ref.order_by("timestamp", direction=firestore.Query.DESCENDING).limit(1).stream())
+
+        if not latest:
+            continue
+
+        latest_data = latest[0].to_dict()
+        acc_value = latest_data.get("accValue", 0)
+        total_acc_value += acc_value
+        user_count += 1
+
+        if acc_value > highest_value:
+            highest_value = acc_value
+            highest_user = username
+
+        # ✅ Only works if you stored stock breakdown in history
+        if "stocks" in latest_data:
+            for symbol, invested in latest_data["stocks"].items():
+                stock_counter[symbol] += invested
+
+    avg_value = round(total_acc_value / user_count, 2) if user_count else 0
+    top_stocks = stock_counter.most_common(3)
+
+    return jsonify({
+        "averageValue": avg_value,
+        "highestValue": highest_value,
+        "highestUser": highest_user,
+        "topStocks": [{"symbol": s, "investment": round(v, 2)} for s, v in top_stocks]
+    })
+
+@app.route("/statistics")
+def statistics_page():
+    username = get_user()
+    return render_template("statistics.html", user=username)
+
 
 
 if __name__ == '__main__':
