@@ -26,7 +26,7 @@ fetch("/teamleaderboard-data")
     const tbody = document.getElementById("leaderboard");
     data.forEach((team, idx) => {
       const row = document.createElement("tr");
-      row.innerHTML = `<td>${idx+1}</td><td>${team.name}</td><td>$${team.totalValue.toFixed(2)}</td>`;
+      row.innerHTML = `<td>${idx+1}</td><td>${team.team}</td><td>$${team.totalValue.toFixed(2)}</td>`;
       tbody.appendChild(row);
     });
   });
