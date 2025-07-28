@@ -410,11 +410,12 @@ def team_leaderboard_data():
     leaderboard = []
 
     for team_doc in teams_ref:
-        team = team_doc.id
-        members = team_doc.to_dict().get("members", [])
+        team_data = team_doc.to_dict()
+        team_code = team_doc.id
+        members = team_data.get("members", [])
         total_value = 0
 
-        # sum latest accValue from each member's history
+        # sum latest accValue for each member
         for user in members:
             hist_ref = db.collection("users").document(user).collection("history")
             latest = list(hist_ref.order_by("timestamp", direction=firestore.Query.DESCENDING).limit(1).stream())
@@ -422,16 +423,17 @@ def team_leaderboard_data():
                 total_value += latest[0].to_dict().get("accValue", 0)
 
         leaderboard.append({
-            "team": team,
-            "totalValue": round(total_value, 2)
+            "team": team_code,
+            "totalValue": round(total_value, 2),
+            "membersCount": len(members),
+            "captain": members[0] if members else "—"
         })
 
         # cache to Firestore
-        db.collection("teams").document(team).update({"totalValue": round(total_value, 2)})
+        db.collection("teams").document(team_code).update({"totalValue": round(total_value, 2)})
 
     leaderboard.sort(key=lambda x: x["totalValue"], reverse=True)
     return jsonify(leaderboard)
-
 
 
 @app.route("/createteam-page")
