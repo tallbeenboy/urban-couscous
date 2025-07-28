@@ -434,6 +434,19 @@ def team_leaderboard():
     return jsonify(leaderboard)
 
 
+@app.route("/createteam-page")
+def createteam_page():
+    return render_template("createteam.html")
+
+@app.route("/jointeam-page")
+def jointeam_page():
+    return render_template("jointeam.html")
+
+@app.route("/teamleaderboard-page")
+def teamleaderboard_page():
+    return render_template("teamleaderboard.html")
+
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port, debug=True)
