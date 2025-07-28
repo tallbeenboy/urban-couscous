@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Create Team</title>
+  <style>
+    body { font-family: Arial; background: #f0f2f5; padding: 20px; }
+    .card { background: #fff; padding: 15px; border-radius: 8px; max-width: 400px; margin: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    input { padding: 8px; width: 100%; margin-bottom: 10px; }
+    button { background: #007BFF; color: white; padding: 10px; border: none; width: 100%; cursor: pointer; }
+    button:hover { background: #0056b3; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Create a Team</h2>
+    <input type="text" id="teamcode" maxlength="3" placeholder="Enter 3-letter team code">
+    <button onclick="createTeam()">Create</button>
+    <p id="msg"></p>
+  </div>
+
+<script>
+function createTeam() {
+  const code = document.getElementById("teamcode").value.toUpperCase();
+  fetch("/createteam", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ team: code })
+  })
+  .then(res => res.text())
+  .then(txt => document.getElementById("msg").textContent = txt);
+}
+</script>
+</body>
+</html>
