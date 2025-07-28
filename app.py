@@ -404,8 +404,8 @@ def join_team():
     return jsonify({"success": f"Joined team {team_code}!"})
 
 
-@app.route("/teamleaderboard", methods=["GET"])
-def team_leaderboard():
+@app.route("/teamleaderboard-data", methods=["GET"])
+def team_leaderboard_data():
     teams_ref = db.collection("teams").stream()
     leaderboard = []
 
@@ -414,7 +414,7 @@ def team_leaderboard():
         members = team_doc.to_dict().get("members", [])
         total_value = 0
 
-        # get most recent accValue for each member
+        # sum latest accValue from each member's history
         for user in members:
             hist_ref = db.collection("users").document(user).collection("history")
             latest = list(hist_ref.order_by("timestamp", direction=firestore.Query.DESCENDING).limit(1).stream())
@@ -426,12 +426,12 @@ def team_leaderboard():
             "totalValue": round(total_value, 2)
         })
 
-        # cache it to Firestore for daily refresh
+        # cache to Firestore
         db.collection("teams").document(team).update({"totalValue": round(total_value, 2)})
 
-    # sort teams by total value
     leaderboard.sort(key=lambda x: x["totalValue"], reverse=True)
     return jsonify(leaderboard)
+
 
 
 @app.route("/createteam-page")
