@@ -11,10 +11,16 @@
   </style>
 </head>
 <body>
-  <h1>🏆 Team Leaderboard</h1>
+  <h1>Team Leaderboard</h1>
   <table>
     <thead>
-      <tr><th>Rank</th><th>Team</th><th>Total Value</th></tr>
+      <tr>
+        <th>Rank</th>
+        <th>Team</th>
+        <th>Members</th>
+        <th>Captain</th>
+        <th>Total Value</th>
+      </tr>
     </thead>
     <tbody id="leaderboard"></tbody>
   </table>
@@ -26,10 +32,17 @@ fetch("/teamleaderboard-data")
     const tbody = document.getElementById("leaderboard");
     data.forEach((team, idx) => {
       const row = document.createElement("tr");
-      row.innerHTML = `<td>${idx+1}</td><td>${team.team}</td><td>$${team.totalValue.toFixed(2)}</td>`;
+      row.innerHTML = `
+        <td>${idx + 1}</td>
+        <td>${team.team}</td>
+        <td>${team.membersCount}</td>
+        <td>${team.captain}</td>
+        <td>$${team.totalValue.toFixed(2)}</td>
+      `;
       tbody.appendChild(row);
     });
   });
+
 </script>
 </body>
 </html>
