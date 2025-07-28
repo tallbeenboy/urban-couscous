@@ -436,15 +436,15 @@ def team_leaderboard():
 
 @app.route("/createteam-page")
 def createteam_page():
-    return render_template("createteam.html")
+    return render_template("create_team.html")
 
 @app.route("/jointeam-page")
 def jointeam_page():
-    return render_template("jointeam.html")
+    return render_template("join_team.html")
 
 @app.route("/teamleaderboard-page")
 def teamleaderboard_page():
-    return render_template("teamleaderboard.html")
+    return render_template("team_leaderboard.html")
 
 
 if __name__ == '__main__':
