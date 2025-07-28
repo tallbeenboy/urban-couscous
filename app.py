@@ -351,6 +351,88 @@ def leaderboard_page():
     username = get_user()
     return render_template("leaderboard.html", user=username)
 
+@app.route("/createteam", methods=["POST"])
+def create_team():
+    username = get_user()
+    if not username:
+        return jsonify({"error": "Not logged in"}), 403
+    
+    data = request.get_json()
+    team_code = data.get("team", "").upper().strip()
+    if len(team_code) != 3:
+        return jsonify({"error": "Team code must be 3 letters"}), 400
+
+    team_ref = db.collection("teams").document(team_code)
+    if team_ref.get().exists:
+        return jsonify({"error": "Team already exists"}), 400
+
+    # create team
+    team_ref.set({
+        "name": team_code,
+        "members": [username],
+        "totalValue": 0
+    })
+
+    # assign team to user
+    db.collection("users").document(username).update({"team": team_code})
+    
+    return jsonify({"success": f"Team {team_code} created!"})
+
+
+@app.route("/jointeam", methods=["POST"])
+def join_team():
+    username = get_user()
+    if not username:
+        return jsonify({"error": "Not logged in"}), 403
+    
+    data = request.get_json()
+    team_code = data.get("team", "").upper().strip()
+
+    team_ref = db.collection("teams").document(team_code)
+    team_doc = team_ref.get()
+    if not team_doc.exists:
+        return jsonify({"error": "Team does not exist"}), 404
+
+    # add user to team members array
+    team_ref.update({
+        "members": firestore.ArrayUnion([username])
+    })
+
+    # assign team to user
+    db.collection("users").document(username).update({"team": team_code})
+
+    return jsonify({"success": f"Joined team {team_code}!"})
+
+
+@app.route("/teamleaderboard", methods=["GET"])
+def team_leaderboard():
+    teams_ref = db.collection("teams").stream()
+    leaderboard = []
+
+    for team_doc in teams_ref:
+        team = team_doc.id
+        members = team_doc.to_dict().get("members", [])
+        total_value = 0
+
+        # get most recent accValue for each member
+        for user in members:
+            hist_ref = db.collection("users").document(user).collection("history")
+            latest = list(hist_ref.order_by("timestamp", direction=firestore.Query.DESCENDING).limit(1).stream())
+            if latest:
+                total_value += latest[0].to_dict().get("accValue", 0)
+
+        leaderboard.append({
+            "team": team,
+            "totalValue": round(total_value, 2)
+        })
+
+        # cache it to Firestore for daily refresh
+        db.collection("teams").document(team).update({"totalValue": round(total_value, 2)})
+
+    # sort teams by total value
+    leaderboard.sort(key=lambda x: x["totalValue"], reverse=True)
+    return jsonify(leaderboard)
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
