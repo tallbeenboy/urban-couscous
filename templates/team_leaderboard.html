@@ -4,16 +4,16 @@
   <meta charset="UTF-8">
   <title>Team Leaderboard</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; }
-    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 6px; overflow: hidden; }
+    body { font-family: Arial; background: #f0f2f5; padding: 20px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; }
     th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
     th { background: #007BFF; color: white; }
-    a { color: #007BFF; text-decoration: none; font-weight: bold; }
+    a { color: #007BFF; text-decoration: none; }
     a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
-  <h1>🏆 Team Leaderboard</h1>
+  <h1>Team Leaderboard</h1>
   <table>
     <thead>
       <tr>
@@ -32,18 +32,13 @@ fetch("/teamleaderboard-data")
   .then(res => res.json())
   .then(data => {
     const tbody = document.getElementById("leaderboard");
-    if (!data.length) {
-      tbody.innerHTML = `<tr><td colspan="5">No teams available</td></tr>`;
-      return;
-    }
-
     data.forEach((team, idx) => {
       const row = document.createElement("tr");
       row.innerHTML = `
         <td>${idx + 1}</td>
-        <td><a href="/team?name=${team.team}">${team.team}</a></td>
-        <td>${team.membersCount || 0}</td>
-        <td>${team.captain || "—"}</td>
+        <td><a href="/team/${team.team}">${team.team}</a></td>
+        <td>${team.membersCount}</td>
+        <td>${team.captain}</td>
         <td>$${team.totalValue.toFixed(2)}</td>
       `;
       tbody.appendChild(row);
