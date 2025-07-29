@@ -181,9 +181,18 @@ def login():
 
 @app.route("/dashboard")
 def dashboard():
-    if not get_user():
+    username = get_user()
+    if not username:
         return redirect(url_for("login"))
-    return render_template("index.html")
+
+    # Get the user's team from Firestore
+    team_name = None
+    user_doc = db.collection("users").document(username).get()
+    if user_doc.exists:
+        team_name = user_doc.to_dict().get("team")
+
+    return render_template("index.html", user=username, team=team_name)
+
 
 
 @app.route("/logout")
