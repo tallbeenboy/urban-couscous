@@ -20,7 +20,7 @@ db = firestore.client()
 
 API_KEY = 'd0v5lc9r01qmg3ukcs60d0v5lc9r01qmg3ukcs6g'
 
-# -- Helper Functions --
+# ---------------- Helper Functions ----------------
 
 def get_user():
     return session.get("username")
@@ -42,7 +42,6 @@ def load_user_data(username):
 
     meta_ref = user_doc.collection("meta").document("account")
     doc = meta_ref.get()
-
     if doc.exists:
         cash = doc.to_dict().get("cash", 0)
     else:
@@ -92,25 +91,12 @@ def get_price(symbol):
             return fallback_doc.to_dict().get("price")
         return None
 
-@app.route("/price", methods=["POST"])
-def return_price():
-    data = request.get_json()
-    symbol = data.get("symbol", "").upper().strip()
-    price = get_price(symbol)
-
-    if price is None:
-        return jsonify({"error": "Failed to fetch price"}), 500
-
-    return jsonify({"price": price}) 
-
-
 def gen_rows(owned):
     rows = []
     for stock in owned:
         current_price = get_price(stock["symbol"])
         if stock["shares"] == 0:
             continue
-
         for row in rows:
             if stock["symbol"] == row["symbol"]:
                 row["shares"] += stock["shares"]
@@ -155,7 +141,8 @@ def save_daily_history(username, cash, owned):
         "timestamp": now
     })
 
-# -- Routes --
+# ---------------- Routes ----------------
+
 @app.route("/")
 def index():
     return render_template("home.html")
@@ -165,18 +152,14 @@ def login():
     if request.method == "POST":
         username = request.form.get("username").strip()
         password = request.form.get("password")
-
         user_doc = db.collection("users").document(username).get()
         if not user_doc.exists:
             return render_template("login.html", error="User does not exist.")
-
         stored_hash = user_doc.to_dict().get("password_hash")
         if not stored_hash or not check_password_hash(stored_hash, password):
             return render_template("login.html", error="Invalid password.")
-
         session["username"] = username
-        return redirect(url_for("dashboard"))  # ✅ redirect to dashboard
-
+        return redirect(url_for("dashboard"))
     return render_template("login.html")
 
 @app.route("/dashboard")
@@ -184,39 +167,31 @@ def dashboard():
     username = get_user()
     if not username:
         return redirect(url_for("login"))
-
-    # Get the user's team from Firestore
     team_name = None
     user_doc = db.collection("users").document(username).get()
     if user_doc.exists:
         team_name = user_doc.to_dict().get("team")
-
     return render_template("index.html", user=username, team=team_name)
-
-
 
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("login"))
 
+# --- Buy / Sell ---
 @app.route("/buy", methods=["POST"])
 def buy():
     username = get_user()
     data = request.get_json()
     symbol = data.get("symbol", "").upper().strip()
     shares = float(data.get("shares", 0))
-
     price = get_price(symbol)
     owned, cash = load_user_data(username)
-
     total_cost = price * shares
     if total_cost > cash:
         return jsonify("Transaction failed: not enough cash")
-
     owned.append({"symbol": symbol, "buyprice": round(price, 2), "shares": round(shares, 2)})
     cash -= total_cost
-
     try:
         save_user_data(username, owned, cash)
         owned, cash = load_user_data(username)
@@ -224,53 +199,20 @@ def buy():
     except Exception as e:
         print("🔥 Firestore failed:", e)
         return jsonify("failed: firestore error")
-
     return jsonify(f"success: bought {shares} {symbol} at {price}")
-
-@app.route("/updatevalues", methods=["POST"])
-def update_values():
-    username = get_user()
-    if not username:
-        return jsonify("Not logged in"), 403
-
-    owned, cash = load_user_data(username)
-    stock_val = round(stockvalue(owned), 2)
-    acc_value = round(stock_val + cash, 2)
-    return jsonify({"stockValue": stock_val, "accValue": acc_value, "cash": round(cash, 2)})
-
-@app.route("/history", methods=["POST"])
-def history():
-    username = get_user()
-    if not username:
-        return jsonify("Not logged in"), 403
-
-    docs = db.collection("users").document(username).collection("history").order_by("timestamp").stream()
-    return jsonify({doc.id: doc.to_dict() for doc in docs})
-
-@app.route("/testfirestore")
-def test_firestore():
-    try:
-        db.collection("test").document("ping").set({"status": "ok"})
-        return "Write worked!"
-    except Exception as e:
-        return f"Write failed: {e}"
 
 @app.route("/sell", methods=["POST"])
 def sell():
     username = get_user()
     if not username:
         return jsonify("Not logged in"), 403
-
     data = request.get_json()
     symbol = data.get("symbol", "").upper().strip()
     shares = float(data.get("shares", 0))
-
     if shares < 1:
         return jsonify("failed transaction: invalid shares")
-
     owned, cash = load_user_data(username)
     subtracted = 0
-
     for stock in owned:
         if stock["symbol"] == symbol:
             if stock["shares"] < shares:
@@ -281,169 +223,153 @@ def sell():
                 stock["shares"] -= shares
             if subtracted == shares:
                 break
-
     if subtracted < shares:
         return jsonify("transaction failed: you don't own enough shares")
-
     price = get_price(symbol)
     cash += price * shares
     owned = [s for s in owned if s["shares"] > 0]
-
     save_user_data(username, owned, cash)
     save_daily_history(username, cash, owned)
-
     return jsonify(f"successful transaction ({round(price * shares, 2)})")
+
+# --- Data APIs ---
+@app.route("/updatevalues", methods=["POST"])
+def update_values():
+    username = get_user()
+    if not username:
+        return jsonify("Not logged in"), 403
+    owned, cash = load_user_data(username)
+    stock_val = round(stockvalue(owned), 2)
+    acc_value = round(stock_val + cash, 2)
+    return jsonify({"stockValue": stock_val, "accValue": acc_value, "cash": round(cash, 2)})
 
 @app.route("/allinvestments", methods=["POST"])
 def get_rows():
     username = get_user()
     if not username:
         return jsonify("Not logged in"), 403
-
     owned, cash = load_user_data(username)
     rows = gen_rows(owned)
     return jsonify(rows)
 
+@app.route("/history", methods=["POST"])
+def history():
+    username = get_user()
+    if not username:
+        return jsonify("Not logged in"), 403
+    docs = db.collection("users").document(username).collection("history").order_by("timestamp").stream()
+    return jsonify({doc.id: doc.to_dict() for doc in docs})
+
+# --- Registration ---
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
         username = request.form.get("username").strip()
         password = request.form.get("password")
-
         if not username or not password:
             return render_template("register.html", error="Username and password required.")
-
         user_doc = db.collection("users").document(username)
         if user_doc.get().exists:
             return render_template("register.html", error="User already exists.")
-
         password_hash = generate_password_hash(password)
-        user_doc.set({
-            "password_hash": password_hash
-        })
+        user_doc.set({"password_hash": password_hash})
         user_doc.collection("meta").document("account").set({"cash": 10000})
-
         return redirect(url_for("login"))
-
     return render_template("register.html")
 
+# --- Leaderboards ---
 @app.route("/leaderboard-data", methods=["GET"])
 def leaderboard_data():
     users_ref = db.collection("users").stream()
     leaderboard = []
-
     for user_doc in users_ref:
         username = user_doc.id
         history_ref = db.collection("users").document(username).collection("history")
         latest = list(history_ref.order_by("timestamp", direction=firestore.Query.DESCENDING).limit(1).stream())
-
         if latest:
             latest_data = latest[0].to_dict()
-            timestamp = latest_data.get("timestamp")
-            readable_time = str(timestamp) if timestamp else "—"
-
+            readable_time = str(latest_data.get("timestamp")) if latest_data.get("timestamp") else "—"
             leaderboard.append({
                 "username": username,
                 "accValue": latest_data.get("accValue", 0),
                 "timestamp": readable_time
             })
-
     leaderboard.sort(key=lambda x: x["accValue"], reverse=True)
     return jsonify(leaderboard)
 
-@app.route("/about")
-def about():
-    return render_template("about.html")
-
 @app.route("/leaderboard-page")
 def leaderboard_page():
-    username = get_user()
-    return render_template("leaderboard.html", user=username)
+    return render_template("leaderboard.html", user=get_user())
 
+# --- Teams ---
 @app.route("/createteam", methods=["POST"])
 def create_team():
     username = get_user()
     if not username:
         return jsonify({"error": "Not logged in"}), 403
-    
     data = request.get_json()
     team_code = data.get("team", "").upper().strip()
     if len(team_code) != 3:
         return jsonify({"error": "Team code must be 3 letters"}), 400
-
     team_ref = db.collection("teams").document(team_code)
     if team_ref.get().exists:
         return jsonify({"error": "Team already exists"}), 400
-
-    # create team
-    team_ref.set({
-        "name": team_code,
-        "members": [username],
-        "totalValue": 0
-    })
-
-    # assign team to user
+    team_ref.set({"name": team_code, "members": [username], "totalValue": 0})
     db.collection("users").document(username).update({"team": team_code})
-    
     return jsonify({"success": f"Team {team_code} created!"})
-
 
 @app.route("/jointeam", methods=["POST"])
 def join_team():
     username = get_user()
     if not username:
         return jsonify({"error": "Not logged in"}), 403
-    
     data = request.get_json()
     team_code = data.get("team", "").upper().strip()
-
     team_ref = db.collection("teams").document(team_code)
-    team_doc = team_ref.get()
-    if not team_doc.exists:
+    if not team_ref.get().exists:
         return jsonify({"error": "Team does not exist"}), 404
-
-    # add user to team members array
-    team_ref.update({
-        "members": firestore.ArrayUnion([username])
-    })
-
-    # assign team to user
+    team_ref.update({"members": firestore.ArrayUnion([username])})
     db.collection("users").document(username).update({"team": team_code})
-
     return jsonify({"success": f"Joined team {team_code}!"})
-
 
 @app.route("/teamleaderboard-data", methods=["GET"])
 def team_leaderboard_data():
     teams_ref = db.collection("teams").stream()
     leaderboard = []
-
     for team_doc in teams_ref:
         team_data = team_doc.to_dict()
         team_code = team_doc.id
         members = team_data.get("members", [])
         total_value = 0
-
-        # sum latest accValue for each member
         for user in members:
             hist_ref = db.collection("users").document(user).collection("history")
             latest = list(hist_ref.order_by("timestamp", direction=firestore.Query.DESCENDING).limit(1).stream())
             if latest:
                 total_value += latest[0].to_dict().get("accValue", 0)
-
         leaderboard.append({
             "team": team_code,
             "totalValue": round(total_value, 2),
             "membersCount": len(members),
             "captain": members[0] if members else "—"
         })
-
-        # cache to Firestore
         db.collection("teams").document(team_code).update({"totalValue": round(total_value, 2)})
-
     leaderboard.sort(key=lambda x: x["totalValue"], reverse=True)
     return jsonify(leaderboard)
 
+@app.route("/team/<team_code>")
+def team_page(team_code):
+    team_ref = db.collection("teams").document(team_code.upper()).get()
+    if not team_ref.exists:
+        return f"Team {team_code} not found", 404
+    team_data = team_ref.to_dict()
+    members_info = []
+    for member in team_data.get("members", []):
+        latest = list(db.collection("users").document(member).collection("history")
+                      .order_by("timestamp", direction=firestore.Query.DESCENDING).limit(1).stream())
+        acc_value = latest[0].to_dict().get("accValue", 0) if latest else 0
+        members_info.append({"username": member, "accValue": acc_value})
+    members_info.sort(key=lambda x: x["accValue"], reverse=True)
+    return render_template("team.html", team=team_code.upper(), members=members_info)
 
 @app.route("/createteam-page")
 def createteam_page():
@@ -457,7 +383,11 @@ def jointeam_page():
 def teamleaderboard_page():
     return render_template("team_leaderboard.html")
 
+@app.route("/about")
+def about():
+    return render_template("about.html")
 
+# --- Run ---
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port, debug=True)
