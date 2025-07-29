@@ -18,6 +18,19 @@
     <button onclick="createTeam()">Create</button>
     <p id="msg"></p>
   </div>
+  <br>
+  <a href="{{ url_for('leaderboard_page') }}">Leaderboard</a>
+        <br>
+        <a href="{{ url_for('about') }}">About</a>
+        <br>
+        <a href="{{ url_for('teamleaderboard_page') }}">Team Leaderboard</a>
+        <br>
+    
+        <a href="{{ url_for('jointeam_page') }}">Join Team</a>
+        <br>
+        <a href="https://www.google.com/finance/">Find more info and research stocks here!</a>
+        <br>
+        All times UTC
 
 <script>
 function createTeam() {
