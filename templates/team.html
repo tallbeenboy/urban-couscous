@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Team {{ team }}</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #007BFF;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background: #007BFF;
+      color: white;
+    }
+    tr:hover {
+      background: #f1f1f1;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Team {{ team }} Members</h1>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Rank</th>
+        <th>Member</th>
+        <th>Account Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for member in members %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ member.username }}</td>
+        <td>${{ "%.2f"|format(member.accValue) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p style="text-align:center; margin-top:20px;">
+    <a href="/teamleaderboard-page">← Back to Team Leaderboard</a>
+  </p>
+
+</body>
+</html>
