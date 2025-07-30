@@ -187,6 +187,12 @@ def buy():
     shares = float(data.get("shares", 0))
     price = get_price(symbol)
     owned, cash = load_user_data(username)
+
+    # ✅ limit to 7 unique stocks
+    owned_symbols = {s["symbol"] for s in owned if s["shares"] > 0}
+    if symbol not in owned_symbols and len(owned_symbols) >= 7:
+        return jsonify("transaction failed: free stock limit reached")
+
     total_cost = price * shares
     if total_cost > cash:
         return jsonify("Transaction failed: not enough cash")
@@ -200,6 +206,7 @@ def buy():
         print("🔥 Firestore failed:", e)
         return jsonify("failed: firestore error")
     return jsonify(f"success: bought {shares} {symbol} at {price}")
+
 
 @app.route("/sell", methods=["POST"])
 def sell():
