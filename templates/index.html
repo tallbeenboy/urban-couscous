@@ -14,8 +14,78 @@
         });
         </script>
 
-    <style>
+     <style>
     /* BASE STYLES - You already have most of this */
+    :root {
+  --bg-color: #f0f2f5;
+  --text-color: #000;
+  --table-bg: #fff;
+  --header-bg: #007BFF;
+  --header-text: #fff;
+  --card-bg: #fff;
+  --link-color: #007BFF;
+}
+
+body.dark-mode {
+  background: #222222 !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode table {
+  background: #222222 !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode th {
+  background: #007BFF !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode td {
+  border-bottom: 1px solid #222222 !important;
+}
+
+body, table, th, td, h1, h2, h3 {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--table-bg);
+}
+
+th, td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  background: var(--header-bg);
+  color: var(--header-text);
+}
+
+a {
+  color: var(--link-color);
+}
+
+.card {
+  background: var(--card-bg);
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
 body {
     font-family: Arial, sans-serif;
     background-color: #f4f6f8;
