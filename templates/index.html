@@ -239,6 +239,10 @@ button:hover {
     <body>
         <div style="text-align: right; padding: 10px;">
             <div style="color:red">WARNING: This is still in development. Accounts may be deleted or changed.</div>Logged in as: <b>{{ session.username }}</b> | <a href="/logout">Logout</a>
+            <br>
+            <button onclick="document.body.classList.toggle('dark-mode')">
+            Dark Mode on/off
+          </button>
           </div>
         <h2 style="color: #007bff;">MockDesk</h2>
         <h1 id="accValue">Account value: $10000</h1>
