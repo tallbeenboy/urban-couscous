@@ -353,15 +353,25 @@ def team_leaderboard_data():
             latest = list(hist_ref.order_by("timestamp", direction=firestore.Query.DESCENDING).limit(1).stream())
             if latest:
                 total_value += latest[0].to_dict().get("accValue", 0)
+        
+        members_count = len(members)
+        # ✅ Calculate average per member (handle division by zero)
+        avg_value = round(total_value / members_count, 2) if members_count > 0 else 0
+        
         leaderboard.append({
             "team": team_code,
-            "totalValue": round(total_value, 2),
-            "membersCount": len(members),
+            "totalValue": avg_value,  # <-- send avg instead of total
+            "membersCount": members_count,
             "captain": members[0] if members else "—"
         })
+        
+        # Keep updating the actual totalValue in Firestore (unchanged)
         db.collection("teams").document(team_code).update({"totalValue": round(total_value, 2)})
+    
+    # Sort by the average per member instead of total team value
     leaderboard.sort(key=lambda x: x["totalValue"], reverse=True)
     return jsonify(leaderboard)
+
 
 @app.route("/team/<team_code>")
 def team_page(team_code):
