@@ -55,7 +55,7 @@ fetch("/teamleaderboard-data")
         <td><a href="/team/${team.team}">${team.team}</a></td>
         <td>${team.membersCount}</td>
         <td>${team.captain}</td>
-        <td>$${(team.totalValue / team.membersCount).toFixed(2)}</td>
+        <td>$${(team.totalValue).toFixed(2)}</td>
       `;
       tbody.appendChild(row);
     });
