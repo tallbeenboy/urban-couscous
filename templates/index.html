@@ -381,6 +381,10 @@ button:hover {
                     totalValue.textContent = "$"+row.currentvalue;
                     const gain = document.createElement("td");
                     gain.textContent = "$"+row.gain;
+                    const gainVal = parseFloat(row.gain);
+                    if (!isNaN(gainVal)) {
+                        gain.style.color = gainVal >= 0 ? "green" : "red";
+                    }
                     tr.appendChild(tdSymbol);
                     tr.appendChild(tdShares);
                     tr.appendChild(tdInvestment);
